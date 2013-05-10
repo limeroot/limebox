@@ -27,18 +27,29 @@
 
 #include "printable.h"
 #include <thread>
+#include <mutex>
+#include <string>
+#include "options.h"
+#include "wan_connection.h"
 
-class WanStatic{
+class WanStatic : public WanConnection{
     
     public:
         WanStatic(Printable &p);
+        WanStatic();
         ~WanStatic();
-        void connect();
+        void setUp(unsigned u);
+        bool Up();
+        std::string interface();
+        void set(std::string interface, std::string name, Options &options);
         
     private:
+        std::string m_interface;
+        unsigned m_dummysecs;
         std::thread *m_connectionThread;
-        
-        void tryConnection();
+        bool m_amIUP;
+        void tryTosetUp();
+        std::mutex m_setUpMutex;
 };
 
 #endif //WANSTATIC_H

@@ -45,8 +45,6 @@ class Wan : public Optionable{
     
     private:
         
-        void connectCallback(std::string);
-        
         std::vector<Printable> m_wanList;
         bool m_enableLB;
         
@@ -63,13 +61,12 @@ class Wan : public Optionable{
         void use(Options &options);
         void dhcp(Options & options);
         void pppoe(Options & options);
-        void _static(Options & options);
+        //void _static(Options & options);
         
-        void start_dhcp();
-        void start_pppoe();
-        void start_static(Printable &wan);
-        
-        bool isValidBandwidthString(std::string &bw);
+        //void start_dhcp();
+        //void start_pppoe();
+        //void start_static(Printable &wan);
+        //
         
         
 

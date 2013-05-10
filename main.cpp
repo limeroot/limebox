@@ -25,8 +25,8 @@
 #include <iostream>
 #include <string>
 #include "options.h"
-#include "interface.h"
-#include "wan.h"
+#include "interface/interface.h"
+#include "wan/wan.h"
 #include "network.h"
 
 using namespace std;

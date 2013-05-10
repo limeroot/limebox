@@ -23,28 +23,99 @@
  */
 
 #include "wan_static.h"
+#include <iostream>
+#include "ipaddress.h"
 
 using namespace std;
 
 WanStatic::WanStatic(Printable &p): m_connectionThread(NULL){
+    m_interface = p.get("interface");
+    m_amIUP = false;
+}
+
+WanStatic::WanStatic(): m_connectionThread(NULL){
     
 }
 
 WanStatic::~WanStatic(){
-    if(m_connectionThread)
+    
+    if(m_connectionThread){
         delete m_connectionThread;
-        
-    m_connectionThread = NULL;
+    }
+    
+    m_connectionThread = NULL; 
 }
 
-void WanStatic::connect(){
-    //this_thread::sleep_for(chrono::seconds(i * 5));
-    //m_connectCallback = callback;
-    //m_connectCallback();
+void WanStatic::setUp(unsigned u){
     
-    m_connectionThread = new thread();
+    m_dummysecs = u;
+    
+    m_connectionThread = new thread(&WanStatic::tryTosetUp , this); 
+    
+    m_connectionThread->detach();
+    
 }
 
-void WanStatic::tryConnection(){
+void WanStatic::tryTosetUp(){
     
+    this_thread::sleep_for(chrono::seconds(m_dummysecs * 5));
+    m_setUpMutex.lock();
+    m_amIUP = true;
+    m_setUpMutex.unlock();
 }
+
+bool WanStatic::Up(){
+    m_setUpMutex.lock();
+    bool ret = m_amIUP;
+    m_setUpMutex.unlock();
+    return ret;
+}
+
+string WanStatic::interface(){
+    
+    return m_interface;
+}
+
+void WanStatic::set(string interface, string name, Options &options){
+    //wan inte8 use eth0 192.168.0.4 gw 192.168.0.1 200/2000
+    
+    string ipaddress = options.current();
+    
+    if(! IPAddress::is_valid(ipaddress)){
+        cout << "error: \"" << ipaddress << "\" is not a valid ipaddress" << endl; 
+        return;
+    }
+    
+    //pop otu the "gw word"
+    options.next();
+    
+    string gw = options.next();
+    
+    if(! IPAddress::is_valid(gw)){
+        cout << "error: \"" << gw << "\" is not a valid gateway" << endl; 
+        return;
+    }
+    
+    string bandwidth = options.next();
+    
+    if(! isValidBandwidthString(bandwidth)){
+        cout << "error: \"" << bandwidth << "\" is not a valid bandwidth" << endl; 
+        return;
+    }
+    
+    string query = "REPLACE "
+                   "INTO "
+                   "wan(name,interface,ip,connection,gateway,bandwidth) "
+                   "VALUES('";
+    query.append(name).append("','");
+    query.append(interface).append("','");
+    query.append(ipaddress).append("','");
+    query.append("static','");
+    query.append(gw).append("','");
+    query.append(bandwidth).append("')");
+    
+    options.database.query(query);
+    
+    string connection = "/sbin/ip link set dev " + interface + " up";
+}
+

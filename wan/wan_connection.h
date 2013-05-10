@@ -25,14 +25,20 @@
 #ifndef WANCONNECTION_H
 #define WANCONNECTION_H
 
+#include <string>
+
 class WanConnection{
     
     public:
         WanConnection();
-        ~WanConnection();
+        virtual ~WanConnection() = 0;
         
     private:
+    
+    protected:
         
+        bool isValidBandwidthString(std::string &bw);
+
 };
 
 #endif //WANCONNECTION_H

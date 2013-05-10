@@ -1,7 +1,7 @@
 /*
- *  Created on  09/05/2013 11:56:35
+ *  Built on 09/04/2013 11:59:24
  *
- *  This file is part of __________
+ *  This file is part of the LR command for GNU/Linux LimeRoot
  *
  *  Copyright (c) LimeRoot, http://www.limeroot.org, devel@limeroot.org
  *
@@ -22,39 +22,34 @@
  *
  */
 
-#include "wan_connection.h"
-#include <vector>
-#include <boost/algorithm/string.hpp>
 
-using namespace std;
+#ifndef INTERFACE_H
+#define INTERFACE_H
 
-WanConnection::WanConnection(){
-    
-}
+#include "options.h" 
+#include "printable.h"
+#include "optionable.h"
 
-WanConnection::~WanConnection(){ 
-    
-}
+class Interface : public Optionable{
 
-bool WanConnection::isValidBandwidthString(std::string &bw){
-    
-    vector<string> words;
+    public:
+        Interface(Options &options);
+        Interface(std::string name);
+        ~Interface();
         
-    boost::split(words, bw, boost::is_any_of("/"));
-    
-    if(words.size() < 2){
-        return false;
-    }
-    
-    bool ret = true; 
-    
-    for(auto s : words){
-    
-        ret = (!s.empty() && std::find_if(s.begin(), 
-            s.end(), [](char c) { return !std::isdigit(c); }) == s.end());
+        //void parseAction(Options & options);
+        void list(Options &options);
+        void json_list(Options &options);
         
-        if(! ret) break;
-    }
-    
-    return ret;
-}
+        std::string ipv4();
+        
+        bool exists();
+    private:
+        std::string m_name;
+        void get_list();
+        std::map<std::string, Printable> m_nic_list;
+        std::string m_interface;
+        
+};
+
+#endif //INTERFACE_H

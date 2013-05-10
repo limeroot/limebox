@@ -21,17 +21,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */   
-
+ 
 #include "wan.h"
 #include <iostream>
 #include <string> 
 #include "ipaddress.h"
 #include "system.h"
-#include <boost/algorithm/string.hpp>
-#include "interface.h"
-#include <boost/algorithm/string.hpp>
+#include "interface/interface.h" 
 #include "wan_static.h"
-
+#include <algorithm>
 using namespace std;
 
 Wan::Wan(Options &options){
@@ -96,100 +94,100 @@ void Wan::json_list(Options &options){
 
 void Wan::use(Options &options){
     
-    if(m_mainArgument == ""){
+    //wan inte8 use eth0 192.168.0.4 gw 192.168.0.1 200/2000
+    
+    //<use> is used to create a new wan or to alter an existing one
+    
+    // m_mainArgument contains the wan name and cannot be empty
+    string name = m_mainArgument;
+    
+    if(name == ""){
         cout << "Error: wan name" << endl;
         return;
     }
     
-    m_interface = m_mainArgument;
+    m_interface = options.next();
     
-    string next = options.next();
+    Interface iface(m_interface);
     
-    if(next == "dhcp"){ 
-        dhcp(options);
+    
+    //The interface exists?
+    
+    if(! iface.exists()){
+        cout << "Error: interface \"" << m_interface << "\" does not exists." << endl;
+        return;
     }
-    else if(next == "user" || next == "pass" || next == "password"){
-        pppoe(options);
-    }
-    else{
     
-        IPAddress ip(next);
     
-        if(ip.is_valid()){
-            
-            m_ipaddress = ip.address() + "/" + ip.prefix(); 
-            _static(options);
+    // The interface can be asigned to only one wan
+    
+    bool interfaceAlreadyAssigned = false;
+    
+    string nameOfTheCurrentInterfaceWan = string();
+    
+    for( auto wan : m_wanList){
+        if(wan.get("interface") == m_interface){
+            interfaceAlreadyAssigned = true;
+            nameOfTheCurrentInterfaceWan = wan.get("name");
+            break;
         }
-        else
-            cout << "error: \"" << next << "\" is not a valid wan option" << endl; 
-        
     }
-}
-
-void Wan::dhcp(Options & options){
-
-    options.next();
     
-    string bandwidth = options.next();
     
-    string query = "REPLACE "
-                   "INTO "
-                   "wan(name,interface,ip,connection,gateway,bandwidth) "
-                   "VALUES('";
-    query.append(m_wanName).append("','");
-    query.append(m_interface).append("','");
-    query.append("','");
-    query.append("dhcp','");
-    query.append("','");
-    query.append(bandwidth).append("')");
-    options.database.query(query); 
-}
-
-void Wan::pppoe(Options & options){
-    
-}
-
-void Wan::_static(Options & options){
-    
-    //wan inte8 use eth0 192.168.0.4 gw 192.168.0.1 200/2000
-    options.next();
-    
-    string gw = options.next();
-    
-    if(! IPAddress::is_valid(gw)){
-        cout << "error: \"" << gw << "\" is not a valid gateway" << endl; 
+    // If the wan name and the interface name are not the names that we are trying to change
+    // then an error is thrown becuase we are trying to assing one interface to multiple wans
+    if(interfaceAlreadyAssigned && (nameOfTheCurrentInterfaceWan != name)){
+        cout << "An interface can only be assigned to one wan" << endl;
         return;
     }
     
-    string bandwidth = options.next();
     
-    if(! isValidBandwidthString(bandwidth)){
-        cout << "error: \"" << bandwidth << "\" is not a valid bandwidth" << endl; 
-        return;
+    // If the wan name is already registered then that registry will be altered
+    
+    
+    string mode = options.next();
+     
+    if(mode == "dhcp")
+    ;
+    else if(next == "user" || next == "pass" || next == "password") //pppoe
+    ;
+    else{
+        WanStatic ws;
+        ws.set(m_interface, name, options);    
     }
     
-    string query = "REPLACE "
-                   "INTO "
-                   "wan(name,interface,ip,connection,gateway,bandwidth) "
-                   "VALUES('";
-    query.append(m_wanName).append("','");
-    query.append(m_interface).append("','");
-    query.append(m_ipaddress).append("','");
-    query.append("static','");
-    query.append(gw).append("','");
-    query.append(bandwidth).append("')");
-
-    options.database.query(query);
-    
-    string connection = "/sbin/ip link set dev " + m_interface + " up";
 }
+
+//void Wan::dhcp(Options & options){
+//
+//    options.next();
+//    
+//    string bandwidth = options.next();
+//    
+//    string query = "REPLACE "
+//                   "INTO "
+//                   "wan(name,interface,ip,connection,gateway,bandwidth) "
+//                   "VALUES('";
+//    query.append(m_wanName).append("','");
+//    query.append(m_interface).append("','");
+//    query.append("','");
+//    query.append("dhcp','");
+//    query.append("','");
+//    query.append(bandwidth).append("')");
+//    options.database.query(query); 
+//}
+//
+//void Wan::pppoe(Options & options){
+//    
+//}
 
 void Wan::start(Options &options){
     
     getList(options);
     
     m_enableLB = (m_wanList.size() > 1);
-    
+    vector<WanStatic*> v;
+    unsigned count = 1;
     for(auto wan : m_wanList){
     
         if(wan.get("connection") == "dhcp")
@@ -198,10 +196,41 @@ void Wan::start(Options &options){
             ;
         if(wan.get("connection") == "static"){
             
-            WanStatic ws(wan);
-            ws.connect();
+            WanStatic *ws = new WanStatic(wan);
+            cout << "Trying to setup " << wan.get("interface") << endl;
+            ws->setUp(count);
+            v.push_back(ws);
+            count++;
         }
-    }  
+    }
+ 
+    
+    while(v.size()){
+        
+        for(auto &w : v){
+            
+            string interface = w->interface();
+                
+            if(w->Up()){
+                
+                cout << interface << " connection success..." << endl;
+                
+                vector<WanStatic*>::iterator it;
+                it = find(v.begin(), v.end(), w);
+                if(it != v.end()){
+                    cout << "deleted " << interface << endl;
+                    delete *it;
+                    *it = NULL;
+                    v.erase(it);
+                    
+                }
+            } else {
+                cout << interface << " not ready yet" << endl; 
+            }
+        }
+        
+        this_thread::sleep_for(chrono::seconds(1));
+    }
 }
 
 void Wan::stop(Options &options){
@@ -212,51 +241,5 @@ void Wan::restart(Options &options){
     
 }
 
-void Wan::start_dhcp(){
-    
-}
 
-void Wan::start_pppoe(){
-    
-}
-
-void Wan::start_static(Printable &wan){
-    
-    cout << "wnainx" << wan.get("interface") << endl;
-    //command = "/sbin/ip link set dev" + interface + " up";
-    //System::execute(command.c_str());
-    
-    //command = "/sbin/ip addr add " + ip + " dev " + interface;
-    //System::execute(command.c_str());
-    //
-    //command = "/sbin/ip route add default via 192.168.0.1
- 
-}
-
-bool Wan::isValidBandwidthString(std::string &bw){
-    
-    vector<string> words;
-        
-    boost::split(words, bw, boost::is_any_of("/"));
-    
-    if(words.size() < 2){
-        return false;
-    }
-    
-    bool ret = true;
-    
-    for(auto s : words){
-    
-        ret = (!s.empty() && std::find_if(s.begin(), 
-            s.end(), [](char c) { return !std::isdigit(c); }) == s.end());
-        
-        if(! ret) break;
-    }
-    
-    return ret;
-}
-
-void Wan::connectCallback(string interface){
-    cout << interface << endl;
-}
 

@@ -1,7 +1,7 @@
 /*
- *  Created on  09/05/2013 11:56:35
+ *  Created on  06/05/2013 14:01:53
  *
- *  This file is part of __________
+ *  This file is part of %(ask)
  *
  *  Copyright (c) LimeRoot, http://www.limeroot.org, devel@limeroot.org
  *
@@ -22,39 +22,12 @@
  *
  */
 
-#include "wan_connection.h"
-#include <vector>
-#include <boost/algorithm/string.hpp>
+#include "lan.h"
 
-using namespace std;
-
-WanConnection::WanConnection(){
+Lan::Lan(){
     
 }
 
-WanConnection::~WanConnection(){ 
+Lan::~Lan(){
     
-}
-
-bool WanConnection::isValidBandwidthString(std::string &bw){
-    
-    vector<string> words;
-        
-    boost::split(words, bw, boost::is_any_of("/"));
-    
-    if(words.size() < 2){
-        return false;
-    }
-    
-    bool ret = true; 
-    
-    for(auto s : words){
-    
-        ret = (!s.empty() && std::find_if(s.begin(), 
-            s.end(), [](char c) { return !std::isdigit(c); }) == s.end());
-        
-        if(! ret) break;
-    }
-    
-    return ret;
 }
