@@ -24,6 +24,9 @@ System::~System(){
 
 void System::execute(string command, vector<string> *output_lines){
     
+    if(output_lines)
+	output_lines->clear();
+    
     command.append(" 2>&1"); 
     
     FILE* pipe = popen(command.c_str(), "r");
@@ -42,6 +45,8 @@ void System::execute(string command, vector<string> *output_lines){
     }
     
     pclose(pipe);
+    
+    //boost::algorithm::trim(result); 
     
     if(output_lines)
         boost::split(*output_lines,result,boost::is_any_of("\n"));

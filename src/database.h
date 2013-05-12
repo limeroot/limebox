@@ -1,5 +1,5 @@
 /*
- *  Created on  06/05/2013 14:00:09
+ *  Built on 13/04/2013 17:15:09
  *
  *  This file is part of the LR command for GNU/Linux LimeRoot
  *
@@ -22,16 +22,26 @@
  *
  */
 
-#ifndef LAN_H
-#define LAN_H
 
-class Lan{
+#ifndef DATABASE_H
+#define DATABASE_H
+#include <string>
+#include <map> 
+#include <vector>
+#include "sqlite3.h"
+
+class Database{
+
     public:
-        Lan();
-        ~Lan();
+        Database();
+	~Database();
+        bool query(std::string squery, std::vector<std::map<std::string, std::string> > *values = NULL);
         
+    
     private:
-        
+        sqlite3 *database;
+
+        std::string m_error;        
 };
 
-#endif //LAN_H
+#endif //DATABASE_H

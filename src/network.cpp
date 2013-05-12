@@ -24,15 +24,16 @@
 
 #include "network.h"
 #include <iostream>
-#include "wan.h"
+#include "wan/wan.h"
 #include <vector>
 #include <map>
 #include "printable.h"
-
+#include "database.h"
 using namespace std;
 
 Network::Network(Options &options){
-    options.database.query("CREATE TABLE IF NOT EXISTS network(name TEXT UNIQUE, status TEXT)");
+    Database database;
+    database.query("CREATE TABLE IF NOT EXISTS network(name TEXT UNIQUE, status TEXT)");
     
     m_functions["start"] = &Optionable::start;
     m_functions["stop"] = &Optionable::stop;
@@ -49,8 +50,8 @@ Network::~Network(){
 bool Network::up(Options &options){
     
     vector< map<string,string>  > values;
-    
-    options.database.query("SELECT status FROM network", &values);
+    Database database;
+    database.query("SELECT status FROM network", &values);
     
     if(values.size())
         return (values[0]["status"] == "up");
@@ -61,8 +62,8 @@ bool Network::up(Options &options){
 void Network::status(Options &options){
     
     vector< map<string,string>  > values;
-    
-    options.database.query("SELECT status FROM network", &values);
+    Database database;
+    database.query("SELECT status FROM network", &values);
     
     if(values.size()){
         Printable p;
@@ -82,8 +83,8 @@ void Network::start(Options &options){
     
     Wan wan;
     wan.start(options);
-    
-    options.database.query("REPLACE INTO network(name,status) VALUES('main','up')");
+    Database database;
+    database.query("REPLACE INTO network(name,status) VALUES('main','up')");
     //cout << "private" << endl;    
     //vector< map<string,string>  > wans;
     //
@@ -108,8 +109,8 @@ void Network::stop(Options &options){
     //Wan wan;
         
     //wan.start(options);
-    
-    options.database.query("REPLACE INTO network(name,status) VALUES('main','down')");    
+    Database database;
+    database.query("REPLACE INTO network(name,status) VALUES('main','down')");    
 }
 
 void Network::restart(Options &options){

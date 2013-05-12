@@ -23,12 +23,10 @@
  */
 
 #include "database.h"
-#include "sqlite3.h"
 #include <iostream>
 
 using namespace std;
 
-sqlite3 *database;
 static int callback( void *slpm, int argc, char **argv, char **azColName );
 
 Database::Database(){
@@ -42,7 +40,7 @@ Database::Database(){
 }
 
 Database::~Database(){
-    sqlite3_close( database );
+    sqlite3_close( database ); 
 }
 
 bool Database::query( string squery, vector< map<string, string>  > *values){

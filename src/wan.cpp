@@ -27,9 +27,10 @@
 #include <string> 
 #include "ipaddress.h"
 #include "system.h"
-#include "interface/interface.h" 
+#include "interface.h" 
 #include "wan_static.h"
 #include <algorithm>
+#include "database.h"
 using namespace std;
 
 Wan::Wan(Options &options){
@@ -37,8 +38,16 @@ Wan::Wan(Options &options){
     m_functions["list"] = &Optionable::list;
     m_functions["json_list"] = &Optionable::json_list;    
     m_functions["use"] = &Optionable::use;    
-
-    options.database.query("CREATE TABLE IF NOT EXISTS wan(name TEXT, interface TEXT UNIQUE, ip TEXT, connection TEXT, gateway TEXT, bandwidth TEXT)");
+    cout << "creating" << endl;
+    Database database;
+    database.query("CREATE TABLE IF NOT EXISTS "
+                           "wan(name TEXT, "
+                           "interface TEXT UNIQUE, "
+                           "ip TEXT, "
+                           "connection TEXT, "
+                           "gateway TEXT, "
+                           "bandwidth TEXT,"
+                           "status TEXT DEFAULT 'down')");
     parseOption(options);
 }
 
@@ -52,33 +61,35 @@ Wan::~Wan(){
 void Wan::getList(Options &options){
     
     vector< map<string,string>  > values;
+    Database database;
+    database.query("select * from wan", &values);
     
-    options.database.query("select name,interface,ip,connection,gateway,bandwidth from wan", &values);
-    
-    for(auto &wan : values){
-    
-        if(wan["connection"] == "dhcp"){
-           string name = wan["interface"];
-           Interface nic(name);
-           wan["ip"] = nic.ipv4();           
-        }
-        
-        Printable p;
-        
-        p.set("name", wan["name"]);
-        
-        p.set("interface", wan["interface"]);
-        
-        p.set("ip", wan["ip"]);
-        
-        p.set("connection", wan["connection"]);
-        
-        p.set("gateway", wan["gateway"]);
-        
-        p.set("bandwidth", wan["bandwidth"]);
-        
-        m_wanList.push_back(p);
-    }
+    //for(auto &wan : values){
+    //
+    //    if(wan["connection"] == "dhcp"){
+    //       string name = wan["interface"];
+    //       Interface nic(name);
+    //       wan["ip"] = nic.ipv4();           
+    //    }
+    //    
+    //    Printable p;
+    //    
+    //    p.set("name", wan["name"]);
+    //    
+    //    p.set("interface", wan["interface"]);
+    //    
+    //    p.set("ip", wan["ip"]);
+    //    
+    //    p.set("connection", wan["connection"]);
+    //    
+    //    p.set("gateway", wan["gateway"]);
+    //    
+    //    p.set("bandwidth", wan["bandwidth"]);
+    //    
+    //    p.set("status", wan["status"]);
+    //    
+    //    m_wanList.push_back(p);
+    //}
     
 }
 
@@ -149,7 +160,7 @@ void Wan::use(Options &options){
      
     if(mode == "dhcp")
     ;
-    else if(next == "user" || next == "pass" || next == "password") //pppoe
+    else if(mode == "user" || mode == "pass" || mode == "password") //pppoe
     ;
     else{
         WanStatic ws;
@@ -186,8 +197,9 @@ void Wan::start(Options &options){
     getList(options);
     
     m_enableLB = (m_wanList.size() > 1);
+    
     vector<WanStatic*> v;
-    unsigned count = 1;
+    
     for(auto wan : m_wanList){
     
         if(wan.get("connection") == "dhcp")
@@ -198,9 +210,8 @@ void Wan::start(Options &options){
             
             WanStatic *ws = new WanStatic(wan);
             cout << "Trying to setup " << wan.get("interface") << endl;
-            ws->setUp(count);
+            ws->setUp();
             v.push_back(ws);
-            count++;
         }
     }
  

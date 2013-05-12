@@ -25,11 +25,14 @@
 #include "wan_static.h"
 #include <iostream>
 #include "ipaddress.h"
+#include "system.h"
+#include "database.h"
 
 using namespace std;
 
 WanStatic::WanStatic(Printable &p): m_connectionThread(NULL){
     m_interface = p.get("interface");
+    m_ipaddress = p.get("ip");
     m_amIUP = false;
 }
 
@@ -46,9 +49,7 @@ WanStatic::~WanStatic(){
     m_connectionThread = NULL; 
 }
 
-void WanStatic::setUp(unsigned u){
-    
-    m_dummysecs = u;
+void WanStatic::setUp(){
     
     m_connectionThread = new thread(&WanStatic::tryTosetUp , this); 
     
@@ -58,13 +59,37 @@ void WanStatic::setUp(unsigned u){
 
 void WanStatic::tryTosetUp(){
     
-    this_thread::sleep_for(chrono::seconds(m_dummysecs * 5));
+    //this_thread::sleep_for(chrono::seconds(m_dummysecs * 5));
     m_setUpMutex.lock();
+
     m_amIUP = true;
+    
+    vector<string> ret;
+    
+    System::execute("/sbin/ip link set dev " + m_interface + " up", &ret);
+    
+    // This is abortable
+    if(ret.size() && ret[0].size()){
+        try{
+            throw 1;
+        } catch(int i) {
+            setStatus("down");
+            cout << endl << "This should not happen ever " << __FILE__ << " " << __LINE__ << endl << endl;
+            if(m_connectionThread){
+                delete m_connectionThread;
+            }
+            m_connectionThread = NULL;
+            exit(i);
+        }
+    }
+    cout << m_ipaddress << endl;
+    //System::execute("/sbin/ip addr add 192.168.0.10/24 dev net0
+    //ExecStart=/sbin/ip route add default via 192.168.0.1
+
     m_setUpMutex.unlock();
 }
 
-bool WanStatic::Up(){
+bool WanStatic::Up(){ 
     m_setUpMutex.lock();
     bool ret = m_amIUP;
     m_setUpMutex.unlock();
@@ -113,8 +138,8 @@ void WanStatic::set(string interface, string name, Options &options){
     query.append("static','");
     query.append(gw).append("','");
     query.append(bandwidth).append("')");
-    
-    options.database.query(query);
+    Database database;
+    database.query(query);
     
     string connection = "/sbin/ip link set dev " + interface + " up";
 }

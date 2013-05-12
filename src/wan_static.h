@@ -1,7 +1,7 @@
 /*
- *  Built on 13/04/2013 17:15:09
+ *  Created on  09/05/2013 11:44:02
  *
- *  This file is part of the LR command for GNU/Linux LimeRoot
+ *  This file is part of __________
  *
  *  Copyright (c) LimeRoot, http://www.limeroot.org, devel@limeroot.org
  *
@@ -22,23 +22,31 @@
  *
  */
 
+#ifndef WANSTATIC_H
+#define WANSTATIC_H
 
-#ifndef DATABASE_H
-#define DATABASE_H
+#include "printable.h"
+#include <thread>
+#include <mutex>
 #include <string>
-#include <map>
-#include <vector>
+#include "wan_connection.h"
 
-class Database{
-
-    public:
-        Database();
-	~Database();
-        bool query(std::string squery, std::vector<std::map<std::string, std::string> > *values = NULL);
-        
+class WanStatic : public WanConnection{
     
+    public:
+        WanStatic(Printable &p);
+        WanStatic();
+        ~WanStatic();
+        void setUp();
+        bool Up();
+        std::string interface();
+        void set(std::string interface, std::string name, Options &options);
+        
     private:
-        std::string m_error;        
+        std::thread *m_connectionThread;
+        bool m_amIUP;
+        void tryTosetUp();
+        std::mutex m_setUpMutex;
 };
 
-#endif //DATABASE_H
+#endif //WANSTATIC_H

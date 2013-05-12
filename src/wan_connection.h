@@ -1,7 +1,7 @@
 /*
- *  Created on 09/04/2013 14:31:11
- *  
- *  This file is part of the LR command for GNU/Linux LimeRoot
+ *  Created on  09/05/2013 11:55:46
+ *
+ *  This file is part of __________
  *
  *  Copyright (c) LimeRoot, http://www.limeroot.org, devel@limeroot.org
  *
@@ -22,28 +22,26 @@
  *
  */
 
-
-#ifndef OPTIONS_H 
-#define OPTIONS_H
+#ifndef WANCONNECTION_H
+#define WANCONNECTION_H
 
 #include <string>
-#include <deque>
-#include "database.h"
+#include "options.h"
 
-class Options{
-
+class WanConnection{
+    
     public:
-        Options(int argc, char **argv);
-	~Options();
-        
-        std::string next();
-        std::string current();
-        
-        Database database;
+        WanConnection();
+        virtual ~WanConnection() = 0;
         
     private:
-        std::deque<std::string> m_options;
-
+    
+    protected:
+        std::string m_interface;
+        std::string m_ipaddress;
+        bool isValidBandwidthString(std::string &bw);
+        
+        void setStatus(std::string status);
 };
 
-#endif //OPTIONS_H
+#endif //WANCONNECTION_H

@@ -1,5 +1,5 @@
 /*
- *  Created on  09/05/2013 11:44:02
+ *  Created on  09/05/2013 11:56:35
  *
  *  This file is part of __________
  *
@@ -22,34 +22,45 @@
  *
  */
 
-#ifndef WANSTATIC_H
-#define WANSTATIC_H
-
-#include "printable.h"
-#include <thread>
-#include <mutex>
-#include <string>
-#include "options.h"
 #include "wan_connection.h"
+#include <vector>
+#include <boost/algorithm/string.hpp>
+#include "database.h"
 
-class WanStatic : public WanConnection{
+using namespace std;
+
+WanConnection::WanConnection(){
     
-    public:
-        WanStatic(Printable &p);
-        WanStatic();
-        ~WanStatic();
-        void setUp(unsigned u);
-        bool Up();
-        std::string interface();
-        void set(std::string interface, std::string name, Options &options);
-        
-    private:
-        std::string m_interface;
-        unsigned m_dummysecs;
-        std::thread *m_connectionThread;
-        bool m_amIUP;
-        void tryTosetUp();
-        std::mutex m_setUpMutex;
-};
+}
 
-#endif //WANSTATIC_H
+WanConnection::~WanConnection(){ 
+    
+}
+
+bool WanConnection::isValidBandwidthString(std::string &bw){ 
+    
+    vector<string> words;
+        
+    boost::split(words, bw, boost::is_any_of("/"));
+    
+    if(words.size() < 2){
+        return false;
+    }
+    
+    bool ret = true; 
+     
+    for(auto s : words){
+    
+        ret = (!s.empty() && std::find_if(s.begin(), 
+            s.end(), [](char c) { return !std::isdigit(c); }) == s.end());
+        
+        if(! ret) break;
+    }
+    
+    return ret;
+}
+
+void WanConnection::setStatus(std::string status){
+    Database db;
+    db.query("UPDATE wan SET status='"+ status +"' WHERE interface='" + m_interface + "'");
+}

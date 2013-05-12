@@ -1,7 +1,7 @@
 /*
- *  Created on  09/05/2013 11:56:35
- *
- *  This file is part of __________
+ *  Created on 09/04/2013 11:27:51
+ *  
+ *  This file is part of the LR command for GNU/Linux LimeRoot
  *
  *  Copyright (c) LimeRoot, http://www.limeroot.org, devel@limeroot.org
  *
@@ -21,40 +21,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#include "wan_connection.h"
-#include <vector>
-#include <boost/algorithm/string.hpp>
+ 
+#include <iostream>
+#include <string>
+#include "options.h"
+//#include "interface/interface.h"
+#include "wan.h"
+//#include "network.h"
 
 using namespace std;
 
-WanConnection::WanConnection(){
+int main(int argc, char** argv){
     
+    Options options(argc, argv);
+         
+    string command = options.next();
+    
+    /*if(command == "interface") Interface interface(options);
+    
+    else*/ if(command == "wan") Wan wan(options);
+    
+    //else if(command == "network") Network network(options);
+    
+    else cout << "Error: Command " << command <<" not exists " << endl;
+
+    return 0;
 }
 
-WanConnection::~WanConnection(){ 
-    
-}
-
-bool WanConnection::isValidBandwidthString(std::string &bw){
-    
-    vector<string> words;
-        
-    boost::split(words, bw, boost::is_any_of("/"));
-    
-    if(words.size() < 2){
-        return false;
-    }
-    
-    bool ret = true; 
-    
-    for(auto s : words){
-    
-        ret = (!s.empty() && std::find_if(s.begin(), 
-            s.end(), [](char c) { return !std::isdigit(c); }) == s.end());
-        
-        if(! ret) break;
-    }
-    
-    return ret;
-}

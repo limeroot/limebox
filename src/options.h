@@ -1,7 +1,7 @@
 /*
- *  Created on  06/05/2013 14:01:53
- *
- *  This file is part of %(ask)
+ *  Created on 09/04/2013 14:31:11
+ *  
+ *  This file is part of the LR command for GNU/Linux LimeRoot
  *
  *  Copyright (c) LimeRoot, http://www.limeroot.org, devel@limeroot.org
  *
@@ -22,12 +22,28 @@
  *
  */
 
-#include "lan.h"
 
-Lan::Lan(){
-    
-}
+#ifndef OPTIONS_H 
+#define OPTIONS_H
 
-Lan::~Lan(){
-    
-}
+#include <string>
+#include <deque>
+#include "database.h"
+
+class Options{
+
+    public:
+        Options(int argc, char **argv);
+	~Options();
+        
+        std::string next();
+        std::string current();
+        
+        //Database database;
+        
+    private:
+        std::deque<std::string> m_options;
+
+};
+
+#endif //OPTIONS_H
