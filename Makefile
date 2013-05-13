@@ -62,7 +62,7 @@ interface.o : src/interface.h src/interface.cpp src/optionable.h src/options.h s
 wan_static.o : src/wan_static.h src/wan_static.cpp
 	$(CC) $(CFLAGS) src/wan_static.cpp
 
-wan_connection.o : src/wan_connection.h src/wan_connection.cpp src/options.h src/database.h
+wan_connection.o : src/wan_connection.h src/wan_connection.cpp src/options.h src/database.h src/system.h src/interface.h
 	$(CC) $(CFLAGS) src/wan_connection.cpp
 
 system.o : src/system.h src/system.cpp

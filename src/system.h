@@ -22,7 +22,7 @@ class System{
         System();
 	~System();
         
-        static void execute(std::string command, std::vector<std::string> *output_lines);
+        static void execute(std::string command, std::vector<std::string> *output_lines = NULL);
     private:
 
 };

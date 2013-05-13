@@ -34,7 +34,7 @@ WanStatic::WanStatic(Printable &p): m_connectionThread(NULL){
     m_interface = p.get("interface");
     m_ipaddress = p.get("ip");
     m_amIUP = false;
-}
+} 
 
 WanStatic::WanStatic(): m_connectionThread(NULL){
     
@@ -51,6 +51,10 @@ WanStatic::~WanStatic(){
 
 void WanStatic::setUp(){
     
+    devUP();
+    
+    devFlush();
+    
     m_connectionThread = new thread(&WanStatic::tryTosetUp , this); 
     
     m_connectionThread->detach();
@@ -60,32 +64,14 @@ void WanStatic::setUp(){
 void WanStatic::tryTosetUp(){
     
     //this_thread::sleep_for(chrono::seconds(m_dummysecs * 5));
+
+    System::execute("ip addr add " + m_ipaddress + " dev " + m_interface);
+    
     m_setUpMutex.lock();
-
-    m_amIUP = true;
     
-    vector<string> ret;
+    // Determine if the change was done
+    m_amIUP = (m_ipaddress == interfaceIPV4());
     
-    System::execute("/sbin/ip link set dev " + m_interface + " up", &ret);
-    
-    // This is abortable
-    if(ret.size() && ret[0].size()){
-        try{
-            throw 1;
-        } catch(int i) {
-            setStatus("down");
-            cout << endl << "This should not happen ever " << __FILE__ << " " << __LINE__ << endl << endl;
-            if(m_connectionThread){
-                delete m_connectionThread;
-            }
-            m_connectionThread = NULL;
-            exit(i);
-        }
-    }
-    cout << m_ipaddress << endl;
-    //System::execute("/sbin/ip addr add 192.168.0.10/24 dev net0
-    //ExecStart=/sbin/ip route add default via 192.168.0.1
-
     m_setUpMutex.unlock();
 }
 
@@ -111,6 +97,8 @@ void WanStatic::set(string interface, string name, Options &options){
         return;
     }
     
+    IPAddress::getFullAddress(ipaddress);
+    
     //pop otu the "gw word"
     options.next();
     
@@ -132,6 +120,7 @@ void WanStatic::set(string interface, string name, Options &options){
                    "INTO "
                    "wan(name,interface,ip,connection,gateway,bandwidth) "
                    "VALUES('";
+    
     query.append(name).append("','");
     query.append(interface).append("','");
     query.append(ipaddress).append("','");
@@ -141,6 +130,7 @@ void WanStatic::set(string interface, string name, Options &options){
     Database database;
     database.query(query);
     
-    string connection = "/sbin/ip link set dev " + interface + " up";
+    //cout << query << endl;
+    //string connection = "/sbin/ip link set dev " + interface + " up";
 }
 

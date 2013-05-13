@@ -52,6 +52,13 @@ bool IPAddress::is_valid(string sip){
     return ip.is_valid();
 }
 
+void IPAddress::getFullAddress(std::string &sip){
+    IPAddress ip(sip);
+    if(ip.is_valid()){
+	sip = ip.address() + "/" + ip.prefix();
+    }
+}
+
 void IPAddress::info(){
     
     //    0       1        2       3               4                  5          6

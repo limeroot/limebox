@@ -1,5 +1,4 @@
-objects/
-build.sh
+*.o
 limebox
 lr.db
 

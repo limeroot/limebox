@@ -29,16 +29,17 @@
 #include "system.h"
 #include "interface.h" 
 #include "wan_static.h"
-#include <algorithm>
+#include <algorithm> 
 #include "database.h"
 using namespace std;
 
 Wan::Wan(Options &options){
     getList(options);
+    m_functions["start"] = &Optionable::start;
+
     m_functions["list"] = &Optionable::list;
     m_functions["json_list"] = &Optionable::json_list;    
     m_functions["use"] = &Optionable::use;    
-    cout << "creating" << endl;
     Database database;
     database.query("CREATE TABLE IF NOT EXISTS "
                            "wan(name TEXT, "
@@ -64,32 +65,32 @@ void Wan::getList(Options &options){
     Database database;
     database.query("select * from wan", &values);
     
-    //for(auto &wan : values){
-    //
-    //    if(wan["connection"] == "dhcp"){
-    //       string name = wan["interface"];
-    //       Interface nic(name);
-    //       wan["ip"] = nic.ipv4();           
-    //    }
-    //    
-    //    Printable p;
-    //    
-    //    p.set("name", wan["name"]);
-    //    
-    //    p.set("interface", wan["interface"]);
-    //    
-    //    p.set("ip", wan["ip"]);
-    //    
-    //    p.set("connection", wan["connection"]);
-    //    
-    //    p.set("gateway", wan["gateway"]);
-    //    
-    //    p.set("bandwidth", wan["bandwidth"]);
-    //    
-    //    p.set("status", wan["status"]);
-    //    
-    //    m_wanList.push_back(p);
-    //}
+    for(auto &wan : values){
+    
+        if(wan["connection"] == "dhcp"){
+           string name = wan["interface"];
+           Interface nic(name);
+           wan["ip"] = nic.ipv4();           
+        }
+        
+        Printable p;
+        
+        p.set("name", wan["name"]);
+        
+        p.set("interface", wan["interface"]);
+        
+        p.set("ip", wan["ip"]);
+        
+        p.set("connection", wan["connection"]);
+        
+        p.set("gateway", wan["gateway"]);
+        
+        p.set("bandwidth", wan["bandwidth"]);
+        
+        p.set("status", wan["status"]);
+        
+        m_wanList.push_back(p);
+    }
     
 }
 
@@ -156,7 +157,7 @@ void Wan::use(Options &options){
     // If the wan name is already registered then that registry will be altered
     
     
-    string mode = options.next();
+    string mode = options.next(); 
      
     if(mode == "dhcp")
     ;

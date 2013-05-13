@@ -37,11 +37,14 @@ class WanConnection{
     private:
     
     protected:
+        bool m_amIUP;
         std::string m_interface;
         std::string m_ipaddress;
         bool isValidBandwidthString(std::string &bw);
-        
+        void devFlush();
+        void devUP();
         void setStatus(std::string status);
+        std::string interfaceIPV4();
 };
 
 #endif //WANCONNECTION_H

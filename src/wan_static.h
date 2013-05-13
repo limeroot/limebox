@@ -44,7 +44,6 @@ class WanStatic : public WanConnection{
         
     private:
         std::thread *m_connectionThread;
-        bool m_amIUP;
         void tryTosetUp();
         std::mutex m_setUpMutex;
 };

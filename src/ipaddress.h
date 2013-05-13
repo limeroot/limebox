@@ -27,7 +27,7 @@ class IPAddress{
         void json_info();
         bool is_valid();
         static bool is_valid(std::string ip);
-        
+        static void getFullAddress(std::string &ip);
         std::string     address();
         std::string     prefix();
         std::string     netmask();

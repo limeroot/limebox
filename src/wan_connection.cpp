@@ -26,6 +26,8 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include "database.h"
+#include "system.h"
+#include "interface.h"
 
 using namespace std;
 
@@ -63,4 +65,19 @@ bool WanConnection::isValidBandwidthString(std::string &bw){
 void WanConnection::setStatus(std::string status){
     Database db;
     db.query("UPDATE wan SET status='"+ status +"' WHERE interface='" + m_interface + "'");
+}
+
+void WanConnection::devFlush(){
+    m_amIUP = false;
+    System::execute("/sbin/ip addr flush dev " + m_interface);
+    System::execute("/sbin/ip route flush dev " + m_interface);
+}
+
+void WanConnection::devUP(){
+    System::execute("/sbin/ip link set dev " + m_interface + " up");
+}
+
+string WanConnection::interfaceIPV4(){
+    Interface iface(m_interface);
+    return iface.ipv4();
 }
