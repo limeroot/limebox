@@ -42,7 +42,9 @@ class Optionable{
         virtual void json_list(Options &options);
         virtual void status(Options &options);
         virtual void use(Options &options);
-        
+        virtual void jsoncommand(Options &options);
+        virtual void jsonevent(Options &options);
+ 
     private:
         
     protected:

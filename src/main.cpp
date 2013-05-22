@@ -25,9 +25,9 @@
 #include <iostream>
 #include <string>
 #include "options.h"
-//#include "interface/interface.h"
+#include "interface.h"
 #include "wan.h"
-//#include "network.h"
+#include "network.h"
 
 using namespace std;
 
@@ -37,11 +37,11 @@ int main(int argc, char** argv){
          
     string command = options.next();
     
-    /*if(command == "interface") Interface interface(options);
+    if(command == "interface") Interface interface(options);
     
-    else*/ if(command == "wan") Wan wan(options);
+    else if(command == "wan") Wan wan(options);
     
-    //else if(command == "network") Network network(options);
+    else if(command == "network") Network network(options);
     
     else cout << "Error: Command " << command <<" not exists " << endl;
 

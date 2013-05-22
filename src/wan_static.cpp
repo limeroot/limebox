@@ -27,7 +27,7 @@
 #include "ipaddress.h"
 #include "system.h"
 #include "database.h"
-
+#include "ipaddress.h"
 using namespace std;
 
 WanStatic::WanStatic(Printable &p): m_connectionThread(NULL){
@@ -51,41 +51,31 @@ WanStatic::~WanStatic(){
 
 void WanStatic::setUp(){
     
-    devUP();
-    
-    devFlush();
-    
-    m_connectionThread = new thread(&WanStatic::tryTosetUp , this); 
-    
-    m_connectionThread->detach();
+    //devUP();
+    //
+    //devFlush();
+    //
+    //m_connectionThread = new thread(&WanStatic::tryTosetUp , this); 
+    //
+    //m_connectionThread->detach();
     
 }
 
 void WanStatic::tryTosetUp(){
     
-    //this_thread::sleep_for(chrono::seconds(m_dummysecs * 5));
-
-    System::execute("ip addr add " + m_ipaddress + " dev " + m_interface);
-    
-    m_setUpMutex.lock();
-    
-    // Determine if the change was done
-    m_amIUP = (m_ipaddress == interfaceIPV4());
-    
-    m_setUpMutex.unlock();
+    ////this_thread::sleep_for(chrono::seconds(m_dummysecs * 5));
+    //
+    //System::execute("ip addr add " + m_ipaddress + " dev " + m_interface);
+    //
+    //m_setUpMutex.lock();
+    //
+    //// Determine if the change was done
+    //m_amIUP = (m_ipaddress == interfaceIPV4());
+    //
+    //m_setUpMutex.unlock();
 }
 
-bool WanStatic::Up(){ 
-    m_setUpMutex.lock();
-    bool ret = m_amIUP;
-    m_setUpMutex.unlock();
-    return ret;
-}
 
-string WanStatic::interface(){
-    
-    return m_interface;
-}
 
 void WanStatic::set(string interface, string name, Options &options){
     //wan inte8 use eth0 192.168.0.4 gw 192.168.0.1 200/2000
@@ -118,19 +108,35 @@ void WanStatic::set(string interface, string name, Options &options){
     
     string query = "REPLACE "
                    "INTO "
-                   "wan(name,interface,ip,connection,gateway,bandwidth) "
+                   "interface(device,mode,name,ip,connection,gateway,bandwidth) "
                    "VALUES('";
     
-    query.append(name).append("','");
     query.append(interface).append("','");
+    query.append("wan").append("','");
+    query.append(name).append("','");
     query.append(ipaddress).append("','");
     query.append("static','");
     query.append(gw).append("','");
     query.append(bandwidth).append("')");
+    
     Database database;
     database.query(query);
-    
-    //cout << query << endl;
-    //string connection = "/sbin/ip link set dev " + interface + " up";
 }
 
+void WanStatic::start(string device){
+    
+    Database db;
+    Database::DatabaseValues vals;
+    db.query("SELECT * FROM interface WHERE device='" + device + "'", &vals);
+    if(! vals.size()) return;
+    devFlush(device);
+    devUP(device);
+    string sip = vals[0]["ip"];
+    System::execute("ip addr add " + sip + " dev " + device);
+    IPAddress ip(sip);
+    string name = vals[0]["name"];
+    string gateway = vals[0]["gateway"];
+    System::execute("ip route add " + ip.network() + "/" + ip.prefix() + " dev " + device + " src " + ip.address() + " table " + name);
+    System::execute("ip route add default via " + gateway + " table " + name);
+    System::execute("ip rule add from " + ip.address() + " table " + name);
+}

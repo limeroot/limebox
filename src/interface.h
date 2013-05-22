@@ -26,7 +26,7 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#include "options.h" 
+#include "options.h"  
 #include "printable.h"
 #include "optionable.h"
 
@@ -34,21 +34,25 @@ class Interface : public Optionable{
 
     public:
         Interface(Options &options);
-        Interface(std::string name);
+        Interface(std::string device);
         ~Interface();
-        
-        //void parseAction(Options & options);
         void list(Options &options);
         void json_list(Options &options);
+        void start();
+        void stop();
+        bool isPlugged();
         
         std::string ipv4();
+        static bool isValid(std::string device);
+        static bool causesConflict(std::string &device, std::string &mode, std::string &name);
         
-        bool exists();
     private:
-        std::string m_name;
+        static void createDatabase();
+        void jsonevent(Options &options);
         void get_list();
         std::map<std::string, Printable> m_nic_list;
-        std::string m_interface;
+        std::string m_device;
+        std::string m_mode;
         
 };
 

@@ -31,24 +31,26 @@
 #include "wan_static.h"
 #include <algorithm> 
 #include "database.h"
+#include "loadbalance.h"
 using namespace std;
 
 Wan::Wan(Options &options){
-    getList(options);
-    m_functions["start"] = &Optionable::start;
+    //getList(options);
+    //m_functions["start"] = &Optionable::start;
 
     m_functions["list"] = &Optionable::list;
     m_functions["json_list"] = &Optionable::json_list;    
     m_functions["use"] = &Optionable::use;    
-    Database database;
-    database.query("CREATE TABLE IF NOT EXISTS "
-                           "wan(name TEXT, "
-                           "interface TEXT UNIQUE, "
-                           "ip TEXT, "
-                           "connection TEXT, "
-                           "gateway TEXT, "
-                           "bandwidth TEXT,"
-                           "status TEXT DEFAULT 'down')");
+    //Database database;
+    //string query = "CREATE TABLE IF NOT EXISTS "
+    //                       "wan("
+    //                       "device TEXT UNIQUE,"
+    //                       "name TEXT,"
+    //                       "ip TEXT,"
+    //                       "connection TEXT,"
+    //                       "gateway TEXT,"
+    //                       "bandwidth TEXT)";
+    //database.query(query);
     parseOption(options);
 }
 
@@ -56,14 +58,18 @@ Wan::Wan(){
     
 }
 
+Wan::Wan(string device){
+    m_interface = device;
+}
+
 Wan::~Wan(){
 }
 
-void Wan::getList(Options &options){
+void Wan::getList(vector<Printable> *wanList){
     
     vector< map<string,string>  > values;
     Database database;
-    database.query("select * from wan", &values);
+    database.query("SELECT * FROM interface WHERE mode='wan'", &values);
     
     for(auto &wan : values){
     
@@ -75,34 +81,53 @@ void Wan::getList(Options &options){
         
         Printable p;
         
-        p.set("name", wan["name"]);
-        
-        p.set("interface", wan["interface"]);
-        
-        p.set("ip", wan["ip"]);
-        
+        p.set("name",       wan["name"]);
+        p.set("device",     wan["device"]);
+        p.set("ip",         wan["ip"]);
         p.set("connection", wan["connection"]);
+        p.set("gateway",    wan["gateway"]);
+        p.set("bandwidth",  wan["bandwidth"]);
+        p.set("status",     wan["status"]);
+        p.set("link",       wan["link"]);
         
-        p.set("gateway", wan["gateway"]);
-        
-        p.set("bandwidth", wan["bandwidth"]);
-        
-        p.set("status", wan["status"]);
-        
-        m_wanList.push_back(p);
+        wanList->push_back(p);
     }
-    
 }
 
 void Wan::list(Options &options){
     
-    Printable::Print(m_wanList); 
+    vector<Printable> wanList;
+    getList(&wanList);
+    Printable::Print(wanList); 
 }
 
 void Wan::json_list(Options &options){
-
-    Printable::PrintJson(m_wanList);    
+    
+    vector<Printable> wanList;
+    getList(&wanList);
+    Printable::PrintJson(wanList);    
 }
+
+
+//bool Wan::isWan(string *name){
+//    
+//    if(name) *name = string();
+//    
+//    Database::DatabaseValues values;
+//    
+//    Database db;
+//    
+//    db.query("SELECT name FROM interface WHERE mode='wan' AND device='" + m_interface + "'", &values);
+//    
+//    if(values.size()){
+//        
+//        map<string,string> val = values[0];
+//        
+//        *name = val["name"];
+//    }
+//    
+//    return values.size();
+//}
 
 void Wan::use(Options &options){
     
@@ -120,54 +145,32 @@ void Wan::use(Options &options){
     
     m_interface = options.next();
     
-    Interface iface(m_interface);
-    
-    
-    //The interface exists?
-    
-    if(! iface.exists()){
-        cout << "Error: interface \"" << m_interface << "\" does not exists." << endl;
+    if(! Interface::isValid(m_interface)){
+        
+        cout << "Error: The device " << m_interface << " does not exists" << endl;
         return;
     }
     
+    string mode = "wan";
     
-    // The interface can be asigned to only one wan
-    
-    bool interfaceAlreadyAssigned = false;
-    
-    string nameOfTheCurrentInterfaceWan = string();
-    
-    for( auto wan : m_wanList){
-        if(wan.get("interface") == m_interface){
-            interfaceAlreadyAssigned = true;
-            nameOfTheCurrentInterfaceWan = wan.get("name");
-            break;
-        }
-    }
-    
-    
-    // If the wan name and the interface name are not the names that we are trying to change
-    // then an error is thrown becuase we are trying to assing one interface to multiple wans
-    if(interfaceAlreadyAssigned && (nameOfTheCurrentInterfaceWan != name)){
-        cout << "An interface can only be assigned to one wan" << endl;
+    if(Interface::causesConflict(m_interface, mode, name)){
+        
+        cout << "Error: Conflict with \"" << mode << " " << name << " on " << m_interface << "\"" << endl;
         return;
     }
     
-    
-    // If the wan name is already registered then that registry will be altered
-    
-    
-    string mode = options.next(); 
+    string wan_mode = options.next(); 
      
-    if(mode == "dhcp")
+    if(wan_mode == "dhcp")
     ;
-    else if(mode == "user" || mode == "pass" || mode == "password") //pppoe
+    else if(wan_mode == "user" || wan_mode == "pass" || wan_mode == "password") //pppoe
     ;
     else{
         WanStatic ws;
-        ws.set(m_interface, name, options);    
+        ws.set(m_interface, name, options);
     }
     
+    LoadBalance::addWan(name);
 }
 
 //void Wan::dhcp(Options & options){
@@ -195,54 +198,55 @@ void Wan::use(Options &options){
 
 void Wan::start(Options &options){
     
-    getList(options);
-    
-    m_enableLB = (m_wanList.size() > 1);
-    
-    vector<WanStatic*> v;
-    
-    for(auto wan : m_wanList){
-    
-        if(wan.get("connection") == "dhcp")
-            ;
-        if(wan.get("connection") == "pppoe")
-            ;
-        if(wan.get("connection") == "static"){
-            
-            WanStatic *ws = new WanStatic(wan);
-            cout << "Trying to setup " << wan.get("interface") << endl;
-            ws->setUp();
-            v.push_back(ws);
-        }
-    }
- 
-    
-    while(v.size()){
-        
-        for(auto &w : v){
-            
-            string interface = w->interface();
-                
-            if(w->Up()){
-                
-                cout << interface << " connection success..." << endl;
-                
-                vector<WanStatic*>::iterator it;
-                it = find(v.begin(), v.end(), w);
-                if(it != v.end()){
-                    cout << "deleted " << interface << endl;
-                    delete *it;
-                    *it = NULL;
-                    v.erase(it);
-                    
-                }
-            } else {
-                cout << interface << " not ready yet" << endl; 
-            }
-        }
-        
-        this_thread::sleep_for(chrono::seconds(1));
-    }
+    //getList(options);
+    //
+    //m_enableLB = (m_wanList.size() > 1);
+    //
+    //vector<WanConnection*> v;
+    //
+    //for(auto wan : m_wanList){
+    //
+    //    if(wan.get("connection") == "dhcp")
+    //        ;
+    //    if(wan.get("connection") == "pppoe")
+    //        ;
+    //    if(wan.get("connection") == "static"){
+    //        
+    //        WanStatic *ws = new WanStatic(wan);
+    //        //cout << "Trying to setup " << wan.get("interface") << endl;
+    //        //ws->setUp();
+    //        v.push_back(ws);
+    //    }
+    //}
+    //
+    //
+    //while(v.size()){
+    //    
+    //    for(auto &w : v){
+    //        
+    //        string interface = w->interface();
+    //            
+    //        if(w->Up()){
+    //            
+    //            //cout << interface << " connection success..." << endl;    
+    //            vector<WanConnection*>::iterator it;
+    //            
+    //            it = find(v.begin(), v.end(), w);
+    //            
+    //            if(it != v.end()){
+    //                //cout << "deleted " << interface << endl;
+    //                delete *it;
+    //                *it = NULL;
+    //                v.erase(it);
+    //                
+    //            }
+    //        }// else {
+    //        //    cout << interface << " not ready yet" << endl; 
+    //        //}
+    //    }
+    //    
+    //    this_thread::sleep_for(chrono::seconds(1));
+    //}
 }
 
 void Wan::stop(Options &options){
@@ -250,6 +254,35 @@ void Wan::stop(Options &options){
 }
 
 void Wan::restart(Options &options){
+    
+}
+
+void Wan::start(){
+    
+}
+
+void Wan::stop(){
+    
+}
+
+void Wan::start(string device){
+    
+    Database::DatabaseValues vals;
+    
+    Database db;
+    
+    db.query("SELECT connection FROM interface WHERE device='" + device + "'", &vals);
+    
+    if(vals.size()){
+        
+        if(vals[0]["connection"] == "static"){
+            
+            WanStatic::start(device);
+        }
+    }
+}
+
+void Wan::stop(string device){
     
 }
 

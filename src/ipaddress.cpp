@@ -16,6 +16,7 @@
 #include <sstream>
 #include <iomanip>
 #include "json.h"
+#include "system.h"
 
 using namespace std;
 
@@ -139,32 +140,14 @@ void IPAddress::json_info(){
 }
 
 void IPAddress::parse_ip(){
-
+    
     //m_print_cols_sizes[0] = (m_address.size() > string("address").size()) ? m_address.size() : string("address").size();   
     if(m_address == "") return;
     
-    string command = "busybox ipcalc -p " + m_address;
-    
-    command.append(" 2>&1");
-    
-    FILE* pipe = popen(command.c_str(), "r");
-    
-    if (!pipe) cout << "ERROR";
-    
-    char buffer[1024];
-    
-    std::string result = "";
-    
-    while(!feof(pipe)) {
-    	if(fgets(buffer, 1024, pipe) != NULL)
-    		result += buffer;
-    }
-    
-    pclose(pipe);
-    
     vector<string> lines;
     
-    boost::split(lines,result,boost::is_any_of("\n"));
+    System::execute("busybox ipcalc -bnmp " + m_address, &lines);
+    
     
     for(auto line : lines){
         
@@ -177,161 +160,185 @@ void IPAddress::parse_ip(){
         vector<string> words;
         
         boost::split(words, line, boost::is_any_of("="));
-        
-        int count = 0;
-        
-        for(auto word : words){
-            
-            if(count == 1){
-                
-                m_prefix = word;
-            }
-            count++;
-        }
-    }
-    
-    m_print_cols_sizes[1] = (m_prefix.size() > string("prefix").size()) ? m_prefix.size() : string("prefix").size();   
-                
-    command = "whatmask " + m_address + "/" + m_prefix;
-    
-    command.append(" 2>&1");
-
-    pipe = popen(command.c_str(), "r");
-    
-    if (!pipe) cout << "ERROR";
-    
-    result = "";
-    
-    while(!feof(pipe)) {
-    	if(fgets(buffer, 1024, pipe) != NULL)
-    		result += buffer;
-    }
-    
-    pclose(pipe);
-    
-    lines.clear();
-    
-    boost::split(lines,result,boost::is_any_of("\n"));
-    
-    
-    for(auto line : lines){
-        
-        if(line.size() && line[0] == 'w' && line[1] == 'a'){
-            cout << line << endl;
-            return;
-        }
-        
-        vector<string> words;
-        
-        boost::split(words, line, boost::is_any_of("="));
-
-        string next_info = "";
-
-        for(auto word : words){
-            if(word == "address"){
-                
-                next_info = word;   
-                continue;   
-            }
-            if(word == "netmask"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "hex_netmask"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "wildcardbits_netmask"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "network"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "broadcast"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "usable_ips"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "first_usableip"){
-                
-                next_info = word;   
-                continue;   
-            }
-            else if(word == "last_usableip"){
-                
-                next_info = word;   
-                continue;   
-            } 
-            
-            // NETX INFO
-            //    0       1        2       3               4                  5          6
-            //address, prefix, netmask, hex netmask, wildcardbits_netmask, network, broadcast
-            if(next_info == "address"){
-                
-                m_address = word;   
-                m_print_cols_sizes[0] = (next_info.size() > word.size()) ? next_info.size() : word.size();
-                continue;   
-            }
-            if(next_info == "netmask"){
-                
-                m_netmask = word;   
-                m_print_cols_sizes[2] = (next_info.size() > word.size()) ? next_info.size() : word.size();
-                continue;   
-            }
-            else if(next_info == "hex_netmask"){
-                
-                m_hex_netmask = word;   
-                m_print_cols_sizes[3] = (next_info.size() > word.size()) ? next_info.size() : word.size();
-                continue;   
-            }
-            else if(next_info == "wildcardbits_netmask"){
-                
-                m_wildcardbits_netmask = word;
-                m_print_cols_sizes[4] = (next_info.size() > word.size()) ? next_info.size() : word.size();
-                continue;   
-            }
-            else if(next_info == "network"){
-                
-                m_network = word;   
-                m_print_cols_sizes[5] = (next_info.size() > word.size()) ? next_info.size() : word.size();
-                continue;   
-            }
-            else if(next_info == "broadcast"){
-                
-                m_broadcast = word;   
-                m_print_cols_sizes[6] = (next_info.size() > word.size()) ? next_info.size() : word.size();
-                continue;   
-            }
-            else if(next_info == "usable_ips"){
-                
-                m_usable_ips = word;   
-                continue;   
-            }
-            else if(next_info == "first_usableip"){
-                
-                m_first_usableip = word;   
-                continue;   
-            }
-            else if(next_info == "last_usableip"){
-                
-                m_last_usableip = word;   
-                continue;   
-            }
-        }
+	
+	if(words.size()){
+	    string key = words[0];
+	    string val = words[1];
+	    
+	    if(key == "PREFIX") m_prefix = val;
+	    else if(key == "NETMASK") m_netmask = val;
+	    else if(key == "BROADCAST") m_broadcast = val;
+	    else if(key == "NETWORK") m_network = val; 
+	}
+	
+	//cout << words[0] << " == " << m_prefix << endl;
+	        
+        //int count = 0;
+        //
+        //for(auto word : words){
+        //    
+        //    if(count == 1){
+        //        
+        //        m_prefix = word;
+        //    }
+        //    count++;
+        //}
     }
     
     m_valid = true;
+    
+    vector<string> address;
+    
+    boost::split(address,m_address,boost::is_any_of("/"));
+    
+    m_full_address = m_address;
+    
+    if(address.size()){	
+	m_address = address[0];
+    }
+    
+    //m_print_cols_sizes[1] = (m_prefix.size() > string("prefix").size()) ? m_prefix.size() : string("prefix").size();   
+    //            
+    //command = "whatmask " + m_address + "/" + m_prefix;
+    //
+    //command.append(" 2>&1");
+    //
+    //pipe = popen(command.c_str(), "r");
+    //
+    //if (!pipe) cout << "ERROR";
+    //
+    //result = "";
+    //
+    //while(!feof(pipe)) {
+    //	if(fgets(buffer, 1024, pipe) != NULL)
+    //		result += buffer;
+    //}
+    //
+    //pclose(pipe);
+    //
+    //lines.clear();
+    //
+    //boost::split(lines,result,boost::is_any_of("\n"));
+    //
+    //
+    //for(auto line : lines){
+    //    
+    //    if(line.size() && line[0] == 'w' && line[1] == 'a'){
+    //        cout << line << endl;
+    //        return;
+    //    }
+    //    
+    //    vector<string> words;
+    //    
+    //    boost::split(words, line, boost::is_any_of("="));
+    //
+    //    string next_info = "";
+    //
+    //    for(auto word : words){
+    //        if(word == "address"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        if(word == "netmask"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "hex_netmask"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "wildcardbits_netmask"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "network"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "broadcast"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "usable_ips"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "first_usableip"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        }
+    //        else if(word == "last_usableip"){
+    //            
+    //            next_info = word;   
+    //            continue;   
+    //        } 
+    //        
+    //        // NETX INFO
+    //        //    0       1        2       3               4                  5          6
+    //        //address, prefix, netmask, hex netmask, wildcardbits_netmask, network, broadcast
+    //        if(next_info == "address"){
+    //            
+    //            m_address = word;   
+    //            m_print_cols_sizes[0] = (next_info.size() > word.size()) ? next_info.size() : word.size();
+    //            continue;   
+    //        }
+    //        if(next_info == "netmask"){
+    //            
+    //            m_netmask = word;   
+    //            m_print_cols_sizes[2] = (next_info.size() > word.size()) ? next_info.size() : word.size();
+    //            continue;   
+    //        }
+    //        else if(next_info == "hex_netmask"){
+    //            
+    //            m_hex_netmask = word;   
+    //            m_print_cols_sizes[3] = (next_info.size() > word.size()) ? next_info.size() : word.size();
+    //            continue;   
+    //        }
+    //        else if(next_info == "wildcardbits_netmask"){
+    //            
+    //            m_wildcardbits_netmask = word;
+    //            m_print_cols_sizes[4] = (next_info.size() > word.size()) ? next_info.size() : word.size();
+    //            continue;   
+    //        }
+    //        else if(next_info == "network"){
+    //            
+    //            m_network = word;   
+    //            m_print_cols_sizes[5] = (next_info.size() > word.size()) ? next_info.size() : word.size();
+    //            continue;   
+    //        }
+    //        else if(next_info == "broadcast"){
+    //            
+    //            m_broadcast = word;   
+    //            m_print_cols_sizes[6] = (next_info.size() > word.size()) ? next_info.size() : word.size();
+    //            continue;   
+    //        }
+    //        else if(next_info == "usable_ips"){
+    //            
+    //            m_usable_ips = word;   
+    //            continue;   
+    //        }
+    //        else if(next_info == "first_usableip"){
+    //            
+    //            m_first_usableip = word;   
+    //            continue;   
+    //        }
+    //        else if(next_info == "last_usableip"){
+    //            
+    //            m_last_usableip = word;   
+    //            continue;   
+    //        }
+    //    }
+    //}
+    //
+    //m_valid = true;
 }
 
 
@@ -355,7 +362,7 @@ string IPAddress::wildcardbits_netmask(){
     return m_netmask;
 }
 
-string IPAddress::netwok(){
+string IPAddress::network(){
     return m_network;
 }
 
@@ -375,3 +382,6 @@ string IPAddress::last_usableip(){
     return m_last_usableip;
 }
 
+string IPAddress::fullAddress(){
+    return m_full_address;
+}

@@ -1,5 +1,5 @@
 /*
- *  Created on  09/05/2013 11:44:02
+ *  Created on  20/05/2013 18:53:41
  *
  *  This file is part of __________
  *
@@ -22,26 +22,21 @@
  *
  */
 
-#ifndef WANSTATIC_H
-#define WANSTATIC_H
+#ifndef LOADBALANCE_H
+#define LOADBALANCE_H
 
-#include "printable.h"
 #include <string>
-#include "wan_connection.h"
 
-class WanStatic : public WanConnection{
+class LoadBalance{
     
     public:
-        WanStatic(Printable &p);
-        WanStatic();
-    
-        ~WanStatic();
-        void setUp();
-        void set(std::string interface, std::string name, Options &options);
-        static void start(std::string device);
+        LoadBalance();
+        ~LoadBalance();
+        
+        static void load();
+        static void addWan(std::string name);
     private:
-        std::thread *m_connectionThread;
-        void tryTosetUp();
+        
 };
 
-#endif //WANSTATIC_H
+#endif //LOADBALANCE_H

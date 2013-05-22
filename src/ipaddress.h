@@ -29,11 +29,12 @@ class IPAddress{
         static bool is_valid(std::string ip);
         static void getFullAddress(std::string &ip);
         std::string     address();
+        std::string     fullAddress();
         std::string     prefix();
         std::string     netmask();
         std::string     hex_netmask();
         std::string     wildcardbits_netmask();
-        std::string     netwok();
+        std::string     network();
         std::string     broadcast();
         std::string     usable_ips();
         std::string     first_usableip();
@@ -41,6 +42,7 @@ class IPAddress{
     
     private:
         std::string     m_address;
+        std::string     m_full_address;
         std::string     m_prefix;
         std::string     m_netmask;
         std::string     m_hex_netmask;

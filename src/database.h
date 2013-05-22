@@ -35,7 +35,8 @@ class Database{
     public:
         Database();
 	~Database();
-        bool query(std::string squery, std::vector<std::map<std::string, std::string> > *values = NULL);
+        typedef std::vector<std::map<std::string, std::string>> DatabaseValues;
+        bool query(std::string squery, DatabaseValues *values = NULL, bool debug = false);
         
     
     private:

@@ -78,4 +78,5 @@ void Optionable::list(Options &options){}
 void Optionable::json_list(Options &options){}
 void Optionable::status(Options &options){}
 void Optionable::use(Options &options){}
-
+void Optionable::jsoncommand(Options &options){}
+void Optionable::jsonevent(Options &options){}

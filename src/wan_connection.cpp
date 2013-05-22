@@ -39,6 +39,7 @@ WanConnection::~WanConnection(){
     
 }
 
+
 bool WanConnection::isValidBandwidthString(std::string &bw){ 
     
     vector<string> words;
@@ -67,17 +68,29 @@ void WanConnection::setStatus(std::string status){
     db.query("UPDATE wan SET status='"+ status +"' WHERE interface='" + m_interface + "'");
 }
 
-void WanConnection::devFlush(){
-    m_amIUP = false;
-    System::execute("/sbin/ip addr flush dev " + m_interface);
-    System::execute("/sbin/ip route flush dev " + m_interface);
+void WanConnection::devFlush(string device){
+    //m_amIUP = false;
+    System::execute("/sbin/ip addr flush dev " + device);
+    System::execute("/sbin/ip route flush dev " + device);
 }
 
-void WanConnection::devUP(){
-    System::execute("/sbin/ip link set dev " + m_interface + " up");
+void WanConnection::devUP(string device){
+    System::execute("/sbin/ip link set dev " + device + " up");
 }
 
 string WanConnection::interfaceIPV4(){
     Interface iface(m_interface);
     return iface.ipv4();
+}
+
+bool WanConnection::Up(){ 
+    m_setUpMutex.lock();
+    bool ret = m_amIUP;
+    m_setUpMutex.unlock();
+    return ret;
+}
+
+string WanConnection::interface(){
+    
+    return m_interface;
 }

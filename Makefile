@@ -22,19 +22,21 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-OBJS = main.o wan.o options.o optionable.o database.o sqlite3.o printable.o jsoncpp.o interface.o wan_static.o system.o wan_connection.o ipaddress.o
+OBJS = main.o wan.o options.o optionable.o database.o sqlite3.o printable.o jsoncpp.o interface.o wan_static.o system.o wan_connection.o ipaddress.o network.o loadbalance.o
+EXTOBJS = /usr/local/boost32/lib/libboost_filesystem.a /usr/local/boost32/lib/libboost_system.a
+
 CC = g++
 DEBUG = -ggdb
 CFLAGS = -Wall -c $(DEBUG) -std=c++0x -m32 
 LFLAGS = -Wall $(DEBUG) -std=c++0x -m32 
 
 limebox : $(OBJS)
-	$(CC) $(LFLAGS) $(OBJS) -o limebox -ldl -lpthread
+	$(CC) $(LFLAGS) $(OBJS) $(EXTOBJS) -o limebox -ldl -lpthread
 
-main.o : src/main.cpp src/wan.h
+main.o : src/main.cpp src/wan.h src/interface.h 
 	$(CC) $(CFLAGS) src/main.cpp
 
-wan.o : src/wan.h src/wan.cpp src/optionable.h src/printable.h src/ipaddress.h src/system.h src/interface.h src/wan_static.h src/database.h
+wan.o : src/wan.h src/wan.cpp src/optionable.h src/printable.h src/ipaddress.h src/system.h src/interface.h src/wan_static.h src/database.h src/loadbalance.h
 	$(CC) $(CFLAGS) src/wan.cpp
 
 options.o : src/options.h src/options.cpp
@@ -56,10 +58,10 @@ printable.o : src/printable.h src/printable.cpp src/json.h
 jsoncpp.o : src/json.h src/jsoncpp.cpp
 	$(CC) $(CFLAGS) src/jsoncpp.cpp
 
-interface.o : src/interface.h src/interface.cpp src/optionable.h src/options.h src/printable.h src/system.h
+interface.o : src/interface.h src/interface.cpp src/optionable.h src/options.h src/printable.h src/system.h src/database.h src/wan.h src/loadbalance.h
 	$(CC) $(CFLAGS) src/interface.cpp
 
-wan_static.o : src/wan_static.h src/wan_static.cpp
+wan_static.o : src/wan_static.h src/wan_static.cpp src/database.h src/ipaddress.h
 	$(CC) $(CFLAGS) src/wan_static.cpp
 
 wan_connection.o : src/wan_connection.h src/wan_connection.cpp src/options.h src/database.h src/system.h src/interface.h
@@ -71,7 +73,12 @@ system.o : src/system.h src/system.cpp
 ipaddress.o : src/ipaddress.h src/ipaddress.cpp src/options.h src/json.h
 	$(CC) $(CFLAGS) src/ipaddress.cpp
 
+network.o : src/network.h src/network.cpp src/optionable.h src/wan.h src/printable.h src/database.h
+	$(CC) $(CFLAGS) src/network.cpp
 
+loadbalance.o : src/loadbalance.h src/loadbalance.cpp src/database.h src/system.h
+	$(CC) $(CFLAGS) src/loadbalance.cpp
+	
 clean :
 	rm -rf *.o limebox lr.db
     

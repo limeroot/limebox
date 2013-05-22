@@ -35,20 +35,28 @@ class Wan : public Optionable{
 
     public:
         Wan(Options &options);
-        Wan(); 
+        Wan();
+        Wan(std::string device);
 	~Wan();
         void start(Options &options);
         void stop(Options &options);
         void restart(Options &options);        
         //void use(Options &options);
-
+        
+        void start();
+        void stop();
+        
+        static void start(std::string device);
+        static void stop(std::string device);
     
     private:
         
-        std::vector<Printable> m_wanList;
+        //std::vector<Printable> m_wanList;
         bool m_enableLB;
         
-        void getList(Options &options);
+        //bool isWan(std::string *name = NULL);
+        
+        void getList(std::vector<Printable> *wanList);
         void list(Options &options);
         void json_list(Options &options);
         //void parseOptions(Options &options);

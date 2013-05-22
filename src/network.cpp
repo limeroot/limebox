@@ -24,7 +24,7 @@
 
 #include "network.h"
 #include <iostream>
-#include "wan/wan.h"
+#include "wan.h"
 #include <vector>
 #include <map>
 #include "printable.h"

@@ -31,7 +31,7 @@ static int callback( void *slpm, int argc, char **argv, char **azColName );
 
 Database::Database(){
     
-    int rc = sqlite3_open( "lr.db", &database );
+    int rc = sqlite3_open( "limebox.db", &database );
        
     if( rc ){
         m_error = "error: database cannot be initialized";
@@ -43,9 +43,10 @@ Database::~Database(){
     sqlite3_close( database ); 
 }
 
-bool Database::query( string squery, vector< map<string, string>  > *values){
+bool Database::query( string squery, DatabaseValues *values, bool debug){
     
-    //cout << squery << endl;
+    if(debug)
+        cout << squery << endl;
     
     char *sqlError = 0;
     

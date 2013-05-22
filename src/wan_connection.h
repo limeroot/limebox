@@ -27,24 +27,31 @@
 
 #include <string>
 #include "options.h"
+#include <thread>
+#include <mutex>
 
 class WanConnection{
     
     public:
         WanConnection();
+        //WanConnection(std::string device);
         virtual ~WanConnection() = 0;
-        
+        bool Up();
+        std::string interface();
+        //static void start(std::string device);
     private:
     
     protected:
+        std::mutex m_setUpMutex;
         bool m_amIUP;
         std::string m_interface;
         std::string m_ipaddress;
         bool isValidBandwidthString(std::string &bw);
-        void devFlush();
-        void devUP();
+        static void devFlush(std::string device);
+        static void devUP(std::string device);
         void setStatus(std::string status);
         std::string interfaceIPV4();
+        //std::string m_device;
 };
 
 #endif //WANCONNECTION_H
